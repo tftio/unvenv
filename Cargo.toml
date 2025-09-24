@@ -1,8 +1,8 @@
 [package]
 name = "unvenv"
-version = "1.0.5"
+version = "1.0.6"
 edition = "2021"
-rust-version = "1.70.0"
+rust-version = "1.85.0"
 authors = ["Your Name <your.email@example.com>"]
 description = "A CLI tool written in Rust"
 license = "MIT"

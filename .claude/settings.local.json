@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh release:*)",
+      "Bash(for:*)",
+      "Bash(do)",
+      "Bash(done)",
+      "Bash(xargs:*)",
+      "Bash(git push:*)",
+      "Bash(echo:*)",
+      "Bash(just version-show:*)",
+      "Bash(just version-patch:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
