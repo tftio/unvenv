@@ -7,32 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- Initial project structure
-- Command-line interface with clap
-- Colorized terminal output
-- Progress indicators for operations
-- Comprehensive error handling
-- Comprehensive CI/CD pipeline
-- Security auditing and dependency management
-- Cross-platform builds (Linux, macOS, Windows)
-- Git hooks with peter-hook integration
-- Professional linting and formatting configuration
+## [1.0.7] - 2025-09-23
 
 ### Changed
-- N/A
-
-### Deprecated
-- N/A
-
-### Removed
-- N/A
-
-### Fixed
-- N/A
-
-### Security
-- N/A
+- Modified scan behavior to check entire current directory instead of only Git-tracked files
+- Git repository is now optional - tool works outside Git repositories
+- Still respects .gitignore rules when Git repository is available
+- Improved directory scanning to be independent of Git working directory detection
 
 ## [0.1.0] - 2025-09-23
 
@@ -45,5 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub Actions CI/CD
 - Cross-platform support
 
-[Unreleased]: https://github.com/yourusername/unvenv/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/yourusername/unvenv/compare/v1.0.7...HEAD
+[1.0.7]: https://github.com/yourusername/unvenv/compare/v0.1.0...v1.0.7
 [0.1.0]: https://github.com/yourusername/unvenv/releases/tag/v0.1.0

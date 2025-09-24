@@ -80,27 +80,16 @@ fn run() -> Result<i32> {
 }
 
 fn scan_for_venvs(is_tty: bool) -> Result<i32> {
-    // Discover Git repository from current directory
-    let Ok(repo) = Repository::discover(".") else {
-        // Not in a Git repository - exit successfully doing nothing
-        return Ok(0);
-    };
+    // Try to discover Git repository for ignore checking, but don't require it
+    let repo = Repository::discover(".").ok();
 
-    // Check if repository is bare
-    if repo.is_bare() {
-        // Bare repository - exit successfully doing nothing
-        return Ok(0);
-    }
+    // Scan current directory
+    let workdir = std::env::current_dir().context("Failed to get current directory")?;
 
-    // Get working directory root
-    let workdir = repo
-        .workdir()
-        .context("Failed to get repository working directory")?;
-
-    // Find all pyvenv.cfg files in the working tree
+    // Find all pyvenv.cfg files in the directory tree
     let mut unignored_venvs = Vec::new();
 
-    for entry in WalkDir::new(workdir)
+    for entry in WalkDir::new(&workdir)
         .follow_links(false)
         .into_iter()
         .filter_entry(|e| {
@@ -114,15 +103,24 @@ fn scan_for_venvs(is_tty: bool) -> Result<i32> {
         if entry.file_name() == "pyvenv.cfg" && entry.file_type().is_file() {
             let full_path = entry.path();
 
-            // Get path relative to repository workdir
+            // Get path relative to current workdir
             let rel_path = full_path
-                .strip_prefix(workdir)
+                .strip_prefix(&workdir)
                 .context("Failed to create relative path")?;
 
-            // Check if file is ignored by Git
-            let is_ignored = repo
-                .status_should_ignore(rel_path)
-                .context("Failed to check Git ignore status")?;
+            // Check if file is ignored by Git (if we have a repo)
+            let is_ignored = if let Some(ref repo) = repo {
+                // Skip bare repositories
+                if repo.is_bare() {
+                    false
+                } else {
+                    repo.status_should_ignore(rel_path)
+                        .context("Failed to check Git ignore status")?
+                }
+            } else {
+                // No Git repo, so treat as not ignored
+                false
+            };
 
             if !is_ignored {
                 // Parse the pyvenv.cfg file
