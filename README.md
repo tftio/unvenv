@@ -17,17 +17,50 @@ A CLI tool written in Rust
 
 ## Installation
 
-### From Source
+### Quick Install (Recommended)
+
+Install the latest release directly from GitHub:
 
 ```bash
-git clone https://github.com/yourusername/unvenv.git
-cd unvenv
-cargo install --path .
+curl -fsSL https://raw.githubusercontent.com/workhelix/unvenv/main/install.sh | sh
 ```
 
-### From Releases
+Or with a custom install directory:
 
-Download the latest binary for your platform from the [Releases](https://github.com/yourusername/unvenv/releases) page.
+```bash
+INSTALL_DIR=/usr/local/bin curl -fsSL https://raw.githubusercontent.com/workhelix/unvenv/main/install.sh | sh
+```
+
+The install script will:
+- Auto-detect your OS and architecture
+- Download the latest release
+- Verify checksums (when available)
+- Install to `$HOME/.local/bin` by default
+- Prompt before replacing existing installations
+- Guide you on adding the directory to your PATH
+
+### Alternative Install Methods
+
+**From Source (requires Rust toolchain):**
+
+```bash
+git clone https://github.com/workhelix/unvenv.git
+cd unvenv
+cargo build --release
+install -m 0755 target/release/unvenv ~/.local/bin/
+```
+
+**From Releases:**
+
+1. Visit [Releases](https://github.com/workhelix/unvenv/releases)
+2. Download the appropriate `unvenv-{target}.zip` for your platform
+3. Extract and copy the binary to a directory in your PATH
+
+### Supported Platforms
+
+- **Linux**: x86_64, aarch64
+- **macOS**: x86_64 (Intel), aarch64 (Apple Silicon)
+- **Windows**: x86_64
 
 ## Usage
 
