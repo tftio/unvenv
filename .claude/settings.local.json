@@ -9,7 +9,15 @@
       "Bash(git push:*)",
       "Bash(echo:*)",
       "Bash(just version-show:*)",
-      "Bash(just version-patch:*)"
+      "Bash(just version-patch:*)",
+      "Bash(git commit:*)",
+      "Bash(git tag:*)",
+      "Bash(gh api:*)",
+      "Bash(gh run list:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Bash(git add:*)",
+      "Bash(just:*)"
     ],
     "deny": [],
     "ask": []
