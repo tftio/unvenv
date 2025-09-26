@@ -187,21 +187,48 @@ cargo deny check
 
 ### Version Management
 
-Use the `just` commands for version bumping:
+**Automated Release Process** - This project uses `versioneer` for atomic version management:
 
+#### Required Tools
+- **`versioneer`**: Synchronizes versions across Cargo.toml and VERSION files
+- **`peter-hook`**: Git hooks enforce version consistency validation
+- **Automated release script**: `./scripts/release.sh` handles complete release workflow
+
+#### Version Management Rules
+1. **NEVER manually edit Cargo.toml version** - Use versioneer instead
+2. **NEVER create git tags manually** - Use `versioneer tag` or release script
+3. **ALWAYS use automated release workflow** - Prevents version/tag mismatches
+
+#### Release Commands
 ```bash
-# Show current version
-just version-show
+# Automated release (recommended)
+./scripts/release.sh patch   # 1.0.10 -> 1.0.11
+./scripts/release.sh minor   # 1.0.10 -> 1.1.0
+./scripts/release.sh major   # 1.0.10 -> 2.0.0
 
-# Bump patch version (0.1.0 -> 0.1.1)
-just version-patch
+# Manual version management (advanced)
+versioneer patch             # Bump version
+versioneer sync              # Synchronize version files
+versioneer verify            # Check version consistency
+versioneer tag               # Create matching git tag
 
-# Bump minor version (0.1.0 -> 0.2.0)
-just version-minor
-
-# Bump major version (0.1.0 -> 1.0.0)
-just version-major
+# Legacy just commands (deprecated)
+just version-show            # Show current version
+just version-patch           # Use ./scripts/release.sh patch instead
+just version-minor           # Use ./scripts/release.sh minor instead
+just version-major           # Use ./scripts/release.sh major instead
 ```
+
+#### Quality Gates
+- **Pre-push hooks**: Verify version file synchronization and tag consistency
+- **GitHub Actions**: Validate tag version matches Cargo.toml before release
+- **Binary verification**: Confirm built binary reports expected version
+- **Release script**: Runs full quality pipeline (tests, lints, audits) before release
+
+#### Troubleshooting
+- **Version mismatch errors**: Run `versioneer verify` and `versioneer sync`
+- **Tag conflicts**: Use `versioneer tag` instead of `git tag`
+- **Failed releases**: Check GitHub Actions logs for version validation errors
 
 ### Git Hooks
 
