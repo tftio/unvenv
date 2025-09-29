@@ -68,7 +68,7 @@ detect_platform() {
 get_latest_version() {
     local api_url="$GITHUB_API_URL/repos/$REPO_OWNER/$REPO_NAME/releases/latest"
 
-    log_info "Fetching latest release information..."
+    log_info "Fetching latest release information..." >&2
 
     if command -v curl >/dev/null 2>&1; then
         curl -fsSL "$api_url" | grep '"tag_name":' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/'
@@ -98,8 +98,9 @@ download_and_verify() {
     fi
 
     # Try to download and verify checksum if available
-    local checksum_url="${download_url}.sha256"
-    local checksum_file="$temp_dir/${filename}.sha256"
+    # Construct checksum URL by replacing .zip with .sha256
+    local checksum_url="${download_url%.zip}.sha256"
+    local checksum_file="$temp_dir/${filename%.zip}.sha256"
 
     if command -v curl >/dev/null 2>&1; then
         if curl -fsSL "$checksum_url" -o "$checksum_file" 2>/dev/null; then
@@ -199,7 +200,8 @@ main() {
     # Create temporary directory
     local temp_dir
     temp_dir=$(mktemp -d)
-    trap 'rm -rf "$temp_dir"' EXIT
+    # Expand temp_dir now since it's a local variable that will be out of scope during trap execution
+    trap "rm -rf \"$temp_dir\"" EXIT
 
     # Download and verify
     download_and_verify "$download_url" "$filename" "$temp_dir"
