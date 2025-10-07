@@ -98,9 +98,9 @@ download_and_verify() {
     fi
 
     # Try to download and verify checksum if available
-    # Construct checksum URL by replacing .zip with .sha256
-    local checksum_url="${download_url%.zip}.sha256"
-    local checksum_file="$temp_dir/${filename%.zip}.sha256"
+    # Construct checksum URL by appending .sha256 to the filename
+    local checksum_url="${download_url}.sha256"
+    local checksum_file="$temp_dir/${filename}.sha256"
 
     if command -v curl >/dev/null 2>&1; then
         if curl -fsSL "$checksum_url" -o "$checksum_file" 2>/dev/null; then
@@ -194,7 +194,7 @@ main() {
     log_info "Latest version: $version"
 
     # Construct download URL
-    local filename="${TOOL_NAME}-${target}.zip"
+    local filename="${TOOL_NAME}-${target}.tar.gz"
     local download_url="$GITHUB_DOWNLOAD_URL/$REPO_OWNER/$REPO_NAME/releases/download/$version/$filename"
 
     # Create temporary directory

@@ -81,9 +81,8 @@ jobs:
           bin: unvenv
           target: ${{ matrix.target }}
           include: LICENSE,README.md,CLAUDE.md
-          tar: none
-          tar-xz: none
-          zip: all
+          tar: unix
+          zip: windows
           checksum: sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
