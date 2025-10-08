@@ -14,20 +14,20 @@ pub fn run_doctor() -> i32 {
 
     // Check if in git repository (informational only)
     println!("Environment:");
-    match Repository::discover(".") {
-        Ok(repo) => {
-            if repo.is_bare() {
-                println!("  ⚠️  In bare Git repository");
-                has_warnings = true;
-            } else {
-                let workdir = repo.workdir().map(|p| p.display().to_string());
-                println!("  ✅ In Git repository: {}", workdir.unwrap_or_else(|| "unknown".to_string()));
-            }
+    if let Ok(repo) = Repository::discover(".") {
+        if repo.is_bare() {
+            println!("  ⚠️  In bare Git repository");
+            has_warnings = true;
+        } else {
+            let workdir = repo.workdir().map(|p| p.display().to_string());
+            println!(
+                "  ✅ In Git repository: {}",
+                workdir.unwrap_or_else(|| "unknown".to_string())
+            );
         }
-        Err(_) => {
-            println!("  ℹ️  Not in a Git repository");
-            println!("     unvenv works best in Git repositories but can scan any directory");
-        }
+    } else {
+        println!("  ℹ️  Not in a Git repository");
+        println!("     unvenv works best in Git repositories but can scan any directory");
     }
 
     println!();
@@ -42,7 +42,10 @@ pub fn run_doctor() -> i32 {
             has_warnings = true;
         }
         Ok(None) => {
-            println!("  ✅ Running latest version (v{})", env!("CARGO_PKG_VERSION"));
+            println!(
+                "  ✅ Running latest version (v{})",
+                env!("CARGO_PKG_VERSION")
+            );
         }
         Err(e) => {
             println!("  ⚠️  Failed to check for updates: {e}");
@@ -54,7 +57,11 @@ pub fn run_doctor() -> i32 {
 
     // Summary
     if has_warnings {
-        println!("⚠️  {} warning{} found", if has_warnings { "1" } else { "0" }, if has_warnings { "" } else { "s" });
+        println!(
+            "⚠️  {} warning{} found",
+            if has_warnings { "1" } else { "0" },
+            if has_warnings { "" } else { "s" }
+        );
     } else {
         println!("✨ Everything looks healthy!");
     }
@@ -81,12 +88,14 @@ fn check_for_updates() -> Result<Option<String>, String> {
         .as_str()
         .ok_or_else(|| "No tag_name in response".to_string())?;
 
-    let latest = tag_name.trim_start_matches("unvenv-v").trim_start_matches('v');
+    let latest = tag_name
+        .trim_start_matches("unvenv-v")
+        .trim_start_matches('v');
     let current = env!("CARGO_PKG_VERSION");
 
-    if latest != current {
-        Ok(Some(latest.to_string()))
-    } else {
+    if latest == current {
         Ok(None)
+    } else {
+        Ok(Some(latest.to_string()))
     }
 }
