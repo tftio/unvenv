@@ -226,7 +226,8 @@ fn print_violation_report(venvs: &[VenvInfo], is_tty: bool) {
         println!();
 
         for venv in venvs {
-            println!("  📁 {}", venv.path.display().to_string().cyan());
+            let normalized_path = venv.path.to_string_lossy().replace('\\', "/");
+            println!("  📁 {}", normalized_path.cyan());
 
             if let Some(home) = &venv.home {
                 println!("     Python home: {home}");
@@ -290,7 +291,8 @@ fn print_violation_report(venvs: &[VenvInfo], is_tty: bool) {
 
         println!("Found the following unignored pyvenv.cfg files:");
         for venv in venvs {
-            println!("  {}", venv.path.display());
+            let normalized_path = venv.path.to_string_lossy().replace('\\', "/");
+            println!("  {normalized_path}");
             if let Some(home) = &venv.home {
                 println!("    Python home: {home}");
             }
