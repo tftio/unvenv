@@ -16,6 +16,10 @@ use std::{
 };
 use walkdir::WalkDir;
 
+mod completions;
+mod doctor;
+mod update;
+
 /// Application version from Cargo.toml
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -44,6 +48,25 @@ enum Commands {
     Version,
     /// Scan for unignored Python virtual environments (default)
     Scan,
+    /// Generate shell completion scripts
+    Completions {
+        /// Shell type (bash, zsh, fish, etc.)
+        shell: clap_complete::Shell,
+    },
+    /// Check health and configuration
+    Doctor,
+    /// Update to the latest version
+    Update {
+        /// Specific version to install (defaults to latest)
+        #[arg(long)]
+        version: Option<String>,
+        /// Force update even if already at target version
+        #[arg(long)]
+        force: bool,
+        /// Custom installation directory
+        #[arg(long)]
+        install_dir: Option<PathBuf>,
+    },
 }
 
 fn main() {
@@ -76,6 +99,20 @@ fn run() -> Result<i32> {
             // Default behavior: scan for venv files
             scan_for_venvs(is_tty)
         }
+        Some(Commands::Completions { shell }) => {
+            completions::generate_completions(shell);
+            Ok(0)
+        }
+        Some(Commands::Doctor) => Ok(doctor::run_doctor()),
+        Some(Commands::Update {
+            version,
+            force,
+            install_dir,
+        }) => Ok(update::run_update(
+            version.as_deref(),
+            force,
+            install_dir.as_deref(),
+        )),
     }
 }
 

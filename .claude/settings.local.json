@@ -17,7 +17,8 @@
       "Bash(curl:*)",
       "Bash(wget:*)",
       "Bash(git add:*)",
-      "Bash(just:*)"
+      "Bash(just:*)",
+      "mcp__fetch__fetch"
     ],
     "deny": [],
     "ask": []

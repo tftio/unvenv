@@ -57,7 +57,13 @@ This project uses `just` as the primary task runner. All development workflows s
 
 ### Tool Behavior
 - **Exit Codes**: 0 (clean/not in git repo), 1 (internal error), 2 (policy violation)
-- **Subcommands**: `version` (show version), `scan` (detect venvs, default), built-in `help`
+- **Subcommands**:
+  - `version` - show version
+  - `scan` - detect venvs (default)
+  - `completions <shell>` - generate shell completions (bash/zsh/fish)
+  - `doctor` - health check and update notifications
+  - `update` - self-update to latest version
+  - built-in `help`
 - **TTY Detection**: Automatically disables colors/decorations when output is not to terminal
 - **Git Integration**: Discovers Git repository, respects .gitignore rules, skips bare repos
 
