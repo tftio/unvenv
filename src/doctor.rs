@@ -99,3 +99,35 @@ fn check_for_updates() -> Result<Option<String>, String> {
         Ok(Some(latest.to_string()))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_run_doctor_returns_zero() {
+        // Doctor always returns 0 (warnings only)
+        let result = run_doctor();
+        assert_eq!(result, 0);
+    }
+
+    #[test]
+    fn test_check_for_updates_handles_network_errors() {
+        // This will likely fail due to network/timeout, which is acceptable
+        // The important part is that it returns Result type correctly
+        let result = check_for_updates();
+        // Either succeeds or returns error, both are valid outcomes
+        match result {
+            Ok(version_opt) => {
+                // If succeeds, could be None (up to date) or Some(version)
+                if let Some(v) = version_opt {
+                    assert!(!v.is_empty());
+                }
+            }
+            Err(e) => {
+                // Error is expected when network unavailable
+                assert!(!e.is_empty());
+            }
+        }
+    }
+}

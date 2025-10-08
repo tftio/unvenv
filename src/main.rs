@@ -387,4 +387,128 @@ version = 3.9.7
 
         Ok(())
     }
+
+    #[test]
+    fn test_parse_pyvenv_cfg_with_comments() -> Result<()> {
+        let temp_dir = TempDir::new()?;
+        let pyvenv_path = temp_dir.path().join("pyvenv.cfg");
+
+        let content = r"# This is a comment
+home = /opt/python
+# Another comment
+version = 3.10.1
+# Trailing comment
+";
+        fs::write(&pyvenv_path, content)?;
+
+        let info = parse_pyvenv_cfg(&pyvenv_path, Path::new("test/pyvenv.cfg"))?;
+
+        assert_eq!(info.home, Some("/opt/python".to_string()));
+        assert_eq!(info.version, Some("3.10.1".to_string()));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_parse_pyvenv_cfg_with_whitespace() -> Result<()> {
+        let temp_dir = TempDir::new()?;
+        let pyvenv_path = temp_dir.path().join("pyvenv.cfg");
+
+        let content = r"  home   =   /usr/local/bin
+  version  =  3.11.0
+";
+        fs::write(&pyvenv_path, content)?;
+
+        let info = parse_pyvenv_cfg(&pyvenv_path, Path::new("test/pyvenv.cfg"))?;
+
+        assert_eq!(info.home, Some("/usr/local/bin".to_string()));
+        assert_eq!(info.version, Some("3.11.0".to_string()));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_print_violation_report_tty() {
+        let venvs = vec![VenvInfo {
+            path: PathBuf::from("venv/pyvenv.cfg"),
+            home: Some("/usr/bin".to_string()),
+            version: Some("3.9.0".to_string()),
+            include_system_site_packages: Some("false".to_string()),
+        }];
+
+        // Should not panic
+        print_violation_report(&venvs, true);
+    }
+
+    #[test]
+    fn test_print_violation_report_non_tty() {
+        let venvs = vec![VenvInfo {
+            path: PathBuf::from("venv/pyvenv.cfg"),
+            home: Some("/usr/bin".to_string()),
+            version: Some("3.9.0".to_string()),
+            include_system_site_packages: None,
+        }];
+
+        // Should not panic
+        print_violation_report(&venvs, false);
+    }
+
+    #[test]
+    fn test_print_violation_report_multiple_venvs() {
+        let venvs = vec![
+            VenvInfo {
+                path: PathBuf::from("venv1/pyvenv.cfg"),
+                home: Some("/usr/bin".to_string()),
+                version: Some("3.9.0".to_string()),
+                include_system_site_packages: Some("true".to_string()),
+            },
+            VenvInfo {
+                path: PathBuf::from("venv2/pyvenv.cfg"),
+                home: None,
+                version: None,
+                include_system_site_packages: None,
+            },
+        ];
+
+        // Should not panic with multiple venvs
+        print_violation_report(&venvs, true);
+        print_violation_report(&venvs, false);
+    }
+
+    #[test]
+    fn test_venv_info_creation() {
+        let venv = VenvInfo {
+            path: PathBuf::from("test/pyvenv.cfg"),
+            home: Some("/usr/bin".to_string()),
+            version: Some("3.9.0".to_string()),
+            include_system_site_packages: Some("false".to_string()),
+        };
+
+        assert_eq!(venv.path, PathBuf::from("test/pyvenv.cfg"));
+        assert_eq!(venv.home, Some("/usr/bin".to_string()));
+        assert_eq!(venv.version, Some("3.9.0".to_string()));
+        assert_eq!(venv.include_system_site_packages, Some("false".to_string()));
+    }
+
+    #[test]
+    fn test_parse_pyvenv_cfg_malformed_lines() -> Result<()> {
+        let temp_dir = TempDir::new()?;
+        let pyvenv_path = temp_dir.path().join("pyvenv.cfg");
+
+        // File with lines that don't have = separator
+        let content = r"home = /usr/bin
+this line has no equals sign
+version = 3.9.0
+another malformed line
+";
+        fs::write(&pyvenv_path, content)?;
+
+        let info = parse_pyvenv_cfg(&pyvenv_path, Path::new("test/pyvenv.cfg"))?;
+
+        // Should still parse valid lines
+        assert_eq!(info.home, Some("/usr/bin".to_string()));
+        assert_eq!(info.version, Some("3.9.0".to_string()));
+
+        Ok(())
+    }
 }

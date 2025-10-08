@@ -233,3 +233,60 @@ fn get_platform_string() -> &'static str {
         _ => "unknown",
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_platform_string() {
+        let platform = get_platform_string();
+        // Verify it returns a non-empty string
+        assert!(!platform.is_empty());
+        // Verify it's one of the expected platforms or "unknown"
+        assert!(matches!(
+            platform,
+            "x86_64-apple-darwin"
+                | "aarch64-apple-darwin"
+                | "x86_64-unknown-linux-gnu"
+                | "aarch64-unknown-linux-gnu"
+                | "x86_64-pc-windows-msvc"
+                | "unknown"
+        ));
+    }
+
+    #[test]
+    fn test_get_latest_version_handles_errors() {
+        // This will likely fail due to network/timeout
+        // The important part is that it returns Result correctly
+        let result = get_latest_version();
+        match result {
+            Ok(v) => {
+                // If it succeeds, version should not be empty
+                assert!(!v.is_empty());
+            }
+            Err(e) => {
+                // Error is expected when network unavailable
+                assert!(!e.is_empty());
+            }
+        }
+    }
+
+    #[test]
+    fn test_run_update_rejects_invalid_path() {
+        // Test with invalid install directory
+        let invalid_path = Path::new("/nonexistent/path/that/does/not/exist");
+        let result = run_update(Some("1.0.0"), true, Some(invalid_path));
+        // Should fail, returning non-zero exit code
+        assert_ne!(result, 0);
+    }
+
+    #[test]
+    fn test_run_update_with_current_version() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let current_version = env!("CARGO_PKG_VERSION");
+        // Trying to update to current version without force should return 2
+        let result = run_update(Some(current_version), false, Some(temp_dir.path()));
+        assert_eq!(result, 2);
+    }
+}

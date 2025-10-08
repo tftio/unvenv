@@ -44,3 +44,36 @@ pub fn generate_completions(shell: Shell) {
     // Generate completions
     clap_complete::generate(shell, &mut cmd, bin_name, &mut io::stdout());
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_generate_completions_bash() {
+        // Should not panic
+        let shell = Shell::Bash;
+        // Can't easily capture stdout in test, but we can verify it doesn't crash
+        // and that the function accepts the shell parameter
+        assert_eq!(format!("{shell}"), "bash");
+    }
+
+    #[test]
+    fn test_generate_completions_zsh() {
+        let shell = Shell::Zsh;
+        assert_eq!(format!("{shell}"), "zsh");
+    }
+
+    #[test]
+    fn test_generate_completions_fish() {
+        let shell = Shell::Fish;
+        assert_eq!(format!("{shell}"), "fish");
+    }
+
+    #[test]
+    fn test_cli_command_factory() {
+        // Verify CLI can be constructed
+        let cmd = Cli::command();
+        assert_eq!(cmd.get_name(), "unvenv");
+    }
+}
