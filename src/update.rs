@@ -256,6 +256,27 @@ mod tests {
     }
 
     #[test]
+    fn test_get_platform_string_exhaustive() {
+        // Test that get_platform_string returns the correct value for current platform
+        let platform = get_platform_string();
+
+        #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
+        assert_eq!(platform, "x86_64-apple-darwin");
+
+        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        assert_eq!(platform, "aarch64-apple-darwin");
+
+        #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+        assert_eq!(platform, "x86_64-unknown-linux-gnu");
+
+        #[cfg(all(target_os = "linux", target_arch = "aarch64"))]
+        assert_eq!(platform, "aarch64-unknown-linux-gnu");
+
+        #[cfg(all(target_os = "windows", target_arch = "x86_64"))]
+        assert_eq!(platform, "x86_64-pc-windows-msvc");
+    }
+
+    #[test]
     fn test_get_latest_version_handles_errors() {
         // This will likely fail due to network/timeout
         // The important part is that it returns Result correctly
@@ -264,6 +285,9 @@ mod tests {
             Ok(v) => {
                 // If it succeeds, version should not be empty
                 assert!(!v.is_empty());
+                // Version should not contain the prefix
+                assert!(!v.starts_with("unvenv-v"));
+                assert!(!v.starts_with('v'));
             }
             Err(e) => {
                 // Error is expected when network unavailable
@@ -288,5 +312,97 @@ mod tests {
         // Trying to update to current version without force should return 2
         let result = run_update(Some(current_version), false, Some(temp_dir.path()));
         assert_eq!(result, 2);
+    }
+
+    #[test]
+    fn test_run_update_with_current_version_forced() {
+        // Test force flag with current version
+        // This will fail at download stage, which is expected
+        let temp_dir = tempfile::tempdir().unwrap();
+        let current_version = env!("CARGO_PKG_VERSION");
+        let result = run_update(Some(current_version), true, Some(temp_dir.path()));
+        // Should attempt update and fail (1) or succeed (0), but not return 2 (already
+        // up-to-date)
+        assert_ne!(result, 2, "Force flag should bypass up-to-date check");
+    }
+
+    #[test]
+    fn test_run_update_with_specific_version() {
+        // Test updating to a specific version
+        let temp_dir = tempfile::tempdir().unwrap();
+        let result = run_update(Some("0.1.0"), true, Some(temp_dir.path()));
+        // Will fail at download, which is expected - we're just testing the path
+        assert_ne!(
+            result, 2,
+            "Should not return 'already up-to-date' for different version"
+        );
+    }
+
+    #[test]
+    fn test_run_update_without_version_uses_latest() {
+        // Test that None version attempts to fetch latest
+        let temp_dir = tempfile::tempdir().unwrap();
+        let result = run_update(None, true, Some(temp_dir.path()));
+        // Will succeed or fail depending on network, but should attempt to check for
+        // updates We're just verifying it doesn't panic
+        assert!(result == 0 || result == 1 || result == 2);
+    }
+
+    #[test]
+    fn test_run_update_exit_codes() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let current_version = env!("CARGO_PKG_VERSION");
+
+        // Test that return value is one of the documented exit codes
+        let result = run_update(Some(current_version), false, Some(temp_dir.path()));
+        assert!(
+            result == 0 || result == 1 || result == 2,
+            "Exit code should be 0 (success), 1 (error), or 2 (already up-to-date)"
+        );
+    }
+
+    #[test]
+    fn test_perform_update_with_invalid_version() {
+        // Test that perform_update returns error for invalid version
+        let temp_dir = tempfile::tempdir().unwrap();
+        let fake_binary = temp_dir.path().join("unvenv");
+
+        // Try to update with a version that doesn't exist
+        let result = perform_update("999.999.999", &fake_binary);
+
+        assert!(result.is_err(), "Should fail for non-existent version");
+    }
+
+    #[test]
+    fn test_get_latest_version_returns_clean_version() {
+        // If network succeeds, verify version format
+        if let Ok(version) = get_latest_version() {
+            // Should not have prefixes
+            assert!(!version.starts_with("unvenv-v"));
+            assert!(!version.starts_with('v'));
+
+            // Should look like a version (starts with digit)
+            assert!(version.chars().next().unwrap().is_ascii_digit());
+
+            // Should contain dots (semver)
+            assert!(version.contains('.'));
+        }
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn test_unix_platform_detection() {
+        let platform = get_platform_string();
+        // On Unix, should not be Windows platform
+        assert!(!platform.contains("windows"));
+        assert!(!platform.contains("msvc"));
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn test_windows_platform_detection() {
+        let platform = get_platform_string();
+        // On Windows, should be Windows platform
+        assert!(platform.contains("windows"));
     }
 }

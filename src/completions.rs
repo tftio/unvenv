@@ -51,29 +51,105 @@ mod tests {
 
     #[test]
     fn test_generate_completions_bash() {
-        // Should not panic
-        let shell = Shell::Bash;
-        // Can't easily capture stdout in test, but we can verify it doesn't crash
-        // and that the function accepts the shell parameter
-        assert_eq!(format!("{shell}"), "bash");
+        // Generate completions to a buffer and verify output contains expected strings
+        let mut cmd = Cli::command();
+        let mut buf = Vec::new();
+        clap_complete::generate(Shell::Bash, &mut cmd, "unvenv", &mut buf);
+
+        let output = String::from_utf8(buf).expect("Invalid UTF-8");
+        // Verify output contains bash-specific completion code
+        assert!(
+            output.contains("_unvenv"),
+            "Should contain completion function name"
+        );
+        assert!(output.contains("unvenv"), "Should contain binary name");
     }
 
     #[test]
     fn test_generate_completions_zsh() {
-        let shell = Shell::Zsh;
-        assert_eq!(format!("{shell}"), "zsh");
+        let mut cmd = Cli::command();
+        let mut buf = Vec::new();
+        clap_complete::generate(Shell::Zsh, &mut cmd, "unvenv", &mut buf);
+
+        let output = String::from_utf8(buf).expect("Invalid UTF-8");
+        // Verify output contains zsh-specific completion code
+        assert!(
+            output.contains("#compdef"),
+            "Should contain zsh compdef directive"
+        );
+        assert!(output.contains("unvenv"), "Should contain binary name");
     }
 
     #[test]
     fn test_generate_completions_fish() {
-        let shell = Shell::Fish;
-        assert_eq!(format!("{shell}"), "fish");
+        let mut cmd = Cli::command();
+        let mut buf = Vec::new();
+        clap_complete::generate(Shell::Fish, &mut cmd, "unvenv", &mut buf);
+
+        let output = String::from_utf8(buf).expect("Invalid UTF-8");
+        // Verify output contains fish-specific completion code
+        assert!(
+            output.contains("complete"),
+            "Should contain fish complete command"
+        );
+        assert!(output.contains("unvenv"), "Should contain binary name");
     }
 
     #[test]
     fn test_cli_command_factory() {
-        // Verify CLI can be constructed
+        // Verify CLI can be constructed and has expected properties
         let cmd = Cli::command();
         assert_eq!(cmd.get_name(), "unvenv");
+
+        // Verify subcommands exist
+        let subcommands: Vec<_> = cmd.get_subcommands().map(clap::Command::get_name).collect();
+        assert!(
+            subcommands.contains(&"version"),
+            "Should have version subcommand"
+        );
+        assert!(subcommands.contains(&"scan"), "Should have scan subcommand");
+        assert!(
+            subcommands.contains(&"completions"),
+            "Should have completions subcommand"
+        );
+        assert!(
+            subcommands.contains(&"doctor"),
+            "Should have doctor subcommand"
+        );
+        assert!(
+            subcommands.contains(&"update"),
+            "Should have update subcommand"
+        );
+    }
+
+    #[test]
+    fn test_completions_for_all_shells() {
+        // Test that completions can be generated for all shell types without panicking
+        let shells = [
+            Shell::Bash,
+            Shell::Zsh,
+            Shell::Fish,
+            Shell::Elvish,
+            Shell::PowerShell,
+        ];
+
+        for shell in shells {
+            let mut cmd = Cli::command();
+            let mut buf = Vec::new();
+            clap_complete::generate(shell, &mut cmd, "unvenv", &mut buf);
+
+            // Verify we got some output
+            assert!(
+                !buf.is_empty(),
+                "Completions for {shell} should not be empty"
+            );
+
+            // Verify it's valid UTF-8
+            let output = String::from_utf8(buf).expect("Completions should be valid UTF-8");
+            assert!(
+                !output.is_empty(),
+                "Completion output for {shell} should not be empty"
+            );
+        }
     }
 }
