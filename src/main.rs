@@ -511,4 +511,158 @@ another malformed line
 
         Ok(())
     }
+
+    #[test]
+    fn test_scan_for_venvs_no_violations() -> Result<()> {
+        let temp_dir = TempDir::new()?;
+
+        // Initialize git repo
+        std::process::Command::new("git")
+            .args(["init"])
+            .current_dir(temp_dir.path())
+            .output()?;
+
+        // Create .gitignore
+        fs::write(temp_dir.path().join(".gitignore"), "venv/\n")?;
+
+        // Create ignored venv
+        let venv_dir = temp_dir.path().join("venv");
+        fs::create_dir(&venv_dir)?;
+        fs::write(venv_dir.join("pyvenv.cfg"), "home = /usr/bin\n")?;
+
+        let original_dir = std::env::current_dir()?;
+        std::env::set_current_dir(temp_dir.path())?;
+
+        // Scan should return 0 (no violations)
+        let result = scan_for_venvs(false)?;
+        assert_eq!(result, 0, "Should return 0 when all venvs are ignored");
+
+        std::env::set_current_dir(original_dir)?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_scan_for_venvs_with_violations() -> Result<()> {
+        let temp_dir = TempDir::new()?;
+
+        // Initialize git repo
+        std::process::Command::new("git")
+            .args(["init"])
+            .current_dir(temp_dir.path())
+            .output()?;
+
+        // Create unignored venv
+        let venv_dir = temp_dir.path().join("venv");
+        fs::create_dir(&venv_dir)?;
+        fs::write(venv_dir.join("pyvenv.cfg"), "home = /usr/bin\n")?;
+
+        let original_dir = std::env::current_dir()?;
+        std::env::set_current_dir(temp_dir.path())?;
+
+        // Scan should return 2 (policy violation)
+        let result = scan_for_venvs(false)?;
+        assert_eq!(result, 2, "Should return 2 when unignored venvs found");
+
+        std::env::set_current_dir(original_dir)?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_parse_pyvenv_cfg_missing_file() {
+        let result = parse_pyvenv_cfg(Path::new("/nonexistent/pyvenv.cfg"), Path::new("test.cfg"));
+        assert!(result.is_err(), "Should return error for missing file");
+    }
+
+    #[test]
+    fn test_parse_pyvenv_cfg_with_special_characters() -> Result<()> {
+        let temp_dir = TempDir::new()?;
+        let pyvenv_path = temp_dir.path().join("pyvenv.cfg");
+
+        // File with special characters and Unicode
+        let content = "home = /usr/bin/python🐍\nversion = 3.9.0\n";
+        fs::write(&pyvenv_path, content)?;
+
+        let info = parse_pyvenv_cfg(&pyvenv_path, Path::new("test/pyvenv.cfg"))?;
+
+        assert_eq!(info.home, Some("/usr/bin/python🐍".to_string()));
+        assert_eq!(info.version, Some("3.9.0".to_string()));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_parse_pyvenv_cfg_only_equals() -> Result<()> {
+        let temp_dir = TempDir::new()?;
+        let pyvenv_path = temp_dir.path().join("pyvenv.cfg");
+
+        // File with line that's only an equals sign
+        let content = "=\nhome = /usr/bin\n";
+        fs::write(&pyvenv_path, content)?;
+
+        let info = parse_pyvenv_cfg(&pyvenv_path, Path::new("test/pyvenv.cfg"))?;
+
+        // Should still parse valid lines
+        assert_eq!(info.home, Some("/usr/bin".to_string()));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_parse_pyvenv_cfg_multiple_equals() -> Result<()> {
+        let temp_dir = TempDir::new()?;
+        let pyvenv_path = temp_dir.path().join("pyvenv.cfg");
+
+        // Line with multiple = signs
+        let content = "home = /usr/bin = something\nversion = 3.9.0\n";
+        fs::write(&pyvenv_path, content)?;
+
+        let info = parse_pyvenv_cfg(&pyvenv_path, Path::new("test/pyvenv.cfg"))?;
+
+        // split_once should only split on first =
+        assert_eq!(info.home, Some("/usr/bin = something".to_string()));
+        assert_eq!(info.version, Some("3.9.0".to_string()));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_venv_info_with_none_values() {
+        let venv = VenvInfo {
+            path: PathBuf::from("test/pyvenv.cfg"),
+            home: None,
+            version: None,
+            include_system_site_packages: None,
+        };
+
+        assert_eq!(venv.path, PathBuf::from("test/pyvenv.cfg"));
+        assert_eq!(venv.home, None);
+        assert_eq!(venv.version, None);
+        assert_eq!(venv.include_system_site_packages, None);
+    }
+
+    #[test]
+    fn test_print_violation_report_empty_venvs() {
+        // Test with empty vector - should not panic
+        let venvs: Vec<VenvInfo> = vec![];
+        print_violation_report(&venvs, true);
+        print_violation_report(&venvs, false);
+    }
+
+    #[test]
+    fn test_parse_pyvenv_cfg_blank_lines_only() -> Result<()> {
+        let temp_dir = TempDir::new()?;
+        let pyvenv_path = temp_dir.path().join("pyvenv.cfg");
+
+        // File with only blank lines
+        let content = "\n\n\n\n";
+        fs::write(&pyvenv_path, content)?;
+
+        let info = parse_pyvenv_cfg(&pyvenv_path, Path::new("test/pyvenv.cfg"))?;
+
+        assert_eq!(info.home, None);
+        assert_eq!(info.version, None);
+        assert_eq!(info.include_system_site_packages, None);
+
+        Ok(())
+    }
 }
