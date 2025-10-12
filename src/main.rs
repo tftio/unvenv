@@ -15,10 +15,7 @@ use std::{
     process,
 };
 use walkdir::WalkDir;
-
-mod completions;
-mod doctor;
-mod update;
+use workhelix_cli_common::{DoctorCheck, DoctorChecks, LicenseType, RepoInfo};
 
 /// Application version from Cargo.toml
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -46,6 +43,8 @@ struct Cli {
 enum Commands {
     /// Show version information
     Version,
+    /// Show license information
+    License,
     /// Scan for unignored Python virtual environments (default)
     Scan,
     /// Generate shell completion scripts
@@ -69,6 +68,39 @@ enum Commands {
     },
 }
 
+struct UnvenvTool;
+
+impl DoctorChecks for UnvenvTool {
+    fn repo_info() -> RepoInfo {
+        RepoInfo::new("workhelix", "unvenv", "v")
+    }
+
+    fn current_version() -> &'static str {
+        VERSION
+    }
+
+    fn tool_checks(&self) -> Vec<DoctorCheck> {
+        let mut checks = Vec::new();
+
+        // Check if in git repository
+        if let Ok(repo) = Repository::discover(".") {
+            if repo.is_bare() {
+                checks.push(DoctorCheck::fail(
+                    "Git repository check",
+                    "In bare Git repository - unvenv works best with regular repositories",
+                ));
+            } else if let Some(workdir) = repo.workdir() {
+                checks.push(DoctorCheck::pass(format!(
+                    "Git repository: {}",
+                    workdir.display()
+                )));
+            }
+        }
+
+        checks
+    }
+}
+
 fn main() {
     let exit_code = match run() {
         Ok(code) => code,
@@ -84,7 +116,7 @@ fn run() -> Result<i32> {
     let cli = Cli::parse();
 
     // Check if stdout is a TTY for decoration
-    let is_tty = atty::is(atty::Stream::Stdout);
+    let is_tty = workhelix_cli_common::output::is_tty();
 
     match cli.command {
         Some(Commands::Version) => {
@@ -95,20 +127,29 @@ fn run() -> Result<i32> {
             }
             Ok(0)
         }
+        Some(Commands::License) => {
+            println!(
+                "{}",
+                workhelix_cli_common::license::display_license("unvenv", LicenseType::MIT)
+            );
+            Ok(0)
+        }
         Some(Commands::Scan) | None => {
             // Default behavior: scan for venv files
             scan_for_venvs(is_tty)
         }
         Some(Commands::Completions { shell }) => {
-            completions::generate_completions(shell);
+            workhelix_cli_common::completions::generate_completions::<Cli>(shell);
             Ok(0)
         }
-        Some(Commands::Doctor) => Ok(doctor::run_doctor()),
+        Some(Commands::Doctor) => Ok(workhelix_cli_common::doctor::run_doctor(&UnvenvTool)),
         Some(Commands::Update {
             version,
             force,
             install_dir,
-        }) => Ok(update::run_update(
+        }) => Ok(workhelix_cli_common::update::run_update(
+            &UnvenvTool::repo_info(),
+            UnvenvTool::current_version(),
             version.as_deref(),
             force,
             install_dir.as_deref(),
