@@ -2,11 +2,11 @@
 set -euo pipefail
 
 # unvenv installation script
-# Usage: curl -fsSL https://raw.githubusercontent.com/workhelix/unvenv/main/install.sh | sh
+# Usage: curl -fsSL https://raw.githubusercontent.com/tftio/unvenv/main/install.sh | sh
 # Or with custom install directory: INSTALL_DIR=/usr/local/bin curl ... | sh
 
 TOOL_NAME="unvenv"
-REPO_OWNER="${REPO_OWNER:-workhelix}"
+REPO_OWNER="${REPO_OWNER:-tftio}"
 REPO_NAME="${REPO_NAME:-unvenv}"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 GITHUB_API_URL="https://api.github.com"
@@ -119,7 +119,8 @@ download_and_verify() {
 
     log_info "Verifying checksum..."
     # Extract expected hash and verify directly
-    local expected_hash=$(cut -d' ' -f1 "$checksum_file")
+    local expected_hash
+    expected_hash=$(cut -d' ' -f1 "$checksum_file")
     local actual_hash
 
     if command -v sha256sum >/dev/null 2>&1; then
@@ -216,7 +217,7 @@ main() {
     # Create temporary directory
     local temp_dir
     temp_dir=$(mktemp -d)
-    # Expand temp_dir now since it's a local variable that will be out of scope during trap execution
+    # shellcheck disable=SC2064
     trap "rm -rf \"$temp_dir\"" EXIT
 
     # Download and verify
