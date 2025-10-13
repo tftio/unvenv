@@ -158,16 +158,19 @@ fn run() -> Result<i32> {
 }
 
 fn scan_for_venvs(is_tty: bool) -> Result<i32> {
-    // Try to discover Git repository for ignore checking, but don't require it
-    let repo = Repository::discover(".").ok();
-
-    // Scan current directory
     let workdir = std::env::current_dir().context("Failed to get current directory")?;
+    scan_for_venvs_in_dir(&workdir, is_tty)
+}
+
+/// Scan a specific directory for unignored Python virtual environments
+fn scan_for_venvs_in_dir(workdir: &Path, is_tty: bool) -> Result<i32> {
+    // Try to discover Git repository for ignore checking, but don't require it
+    let repo = Repository::discover(workdir).ok();
 
     // Find all pyvenv.cfg files in the directory tree
     let mut unignored_venvs = Vec::new();
 
-    for entry in WalkDir::new(&workdir)
+    for entry in WalkDir::new(workdir)
         .follow_links(false)
         .into_iter()
         .filter_entry(|e| {
@@ -183,7 +186,7 @@ fn scan_for_venvs(is_tty: bool) -> Result<i32> {
 
             // Get path relative to current workdir
             let rel_path = full_path
-                .strip_prefix(&workdir)
+                .strip_prefix(workdir)
                 .context("Failed to create relative path")?;
 
             // Check if file is ignored by Git (if we have a repo)
@@ -571,14 +574,10 @@ another malformed line
         fs::create_dir(&venv_dir)?;
         fs::write(venv_dir.join("pyvenv.cfg"), "home = /usr/bin\n")?;
 
-        let original_dir = std::env::current_dir()?;
-        std::env::set_current_dir(temp_dir.path())?;
-
         // Scan should return 0 (no violations)
-        let result = scan_for_venvs(false)?;
+        let result = scan_for_venvs_in_dir(temp_dir.path(), false)?;
         assert_eq!(result, 0, "Should return 0 when all venvs are ignored");
 
-        std::env::set_current_dir(original_dir)?;
         Ok(())
     }
 
@@ -597,14 +596,10 @@ another malformed line
         fs::create_dir(&venv_dir)?;
         fs::write(venv_dir.join("pyvenv.cfg"), "home = /usr/bin\n")?;
 
-        let original_dir = std::env::current_dir()?;
-        std::env::set_current_dir(temp_dir.path())?;
-
         // Scan should return 2 (policy violation)
-        let result = scan_for_venvs(false)?;
+        let result = scan_for_venvs_in_dir(temp_dir.path(), false)?;
         assert_eq!(result, 2, "Should return 2 when unignored venvs found");
 
-        std::env::set_current_dir(original_dir)?;
         Ok(())
     }
 
