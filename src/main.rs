@@ -72,7 +72,7 @@ struct UnvenvTool;
 
 impl DoctorChecks for UnvenvTool {
     fn repo_info() -> RepoInfo {
-        RepoInfo::new("workhelix", "unvenv", "v")
+        RepoInfo::new("tftio", "unvenv", "v")
     }
 
     fn current_version() -> &'static str {
