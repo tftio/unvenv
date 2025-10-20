@@ -1,6 +1,6 @@
 [package]
 name = "unvenv"
-version = "1.5.7"
+version = "1.5.9"
 edition = "2024"
 rust-version = "1.85.0"
 authors = ["Your Name <your.email@example.com>"]
@@ -36,7 +36,7 @@ clap_complete = "4.5"
 colored = "3.0"
 git2 = { version = "0.20", default-features = false, features = ["vendored-libgit2"] }
 walkdir = "2.5"
-workhelix-cli-common = "0.2.0"
+workhelix-cli-common = "0.3.1"
 
 [dev-dependencies]
 tempfile = "3.23"
